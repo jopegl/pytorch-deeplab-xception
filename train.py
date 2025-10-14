@@ -13,6 +13,7 @@ from utils.lr_scheduler import LR_Scheduler
 from utils.saver import Saver
 from utils.summaries import TensorboardSummary
 from utils.metrics import Evaluator
+from area_loss_fn import hadamard_mse_loss
 
 class Trainer(object):
     def __init__(self, args):
@@ -56,6 +57,7 @@ class Trainer(object):
             weight = None
         self.criterion = SegmentationLosses(weight=weight, cuda=args.cuda).build_loss(mode=args.loss_type)
         self.model, self.optimizer = model, optimizer
+        self.area_loss_fn = torch.nn.CrossEntropyLoss(ignore_index=255)
         
         # Define Evaluator
         self.evaluator = Evaluator(self.nclass)
@@ -92,6 +94,7 @@ class Trainer(object):
 
     def training(self, epoch):
         train_loss = 0.0
+        area_loss = 0
         self.model.train()
         tbar = tqdm(self.train_loader)
         num_img_tr = len(self.train_loader)
