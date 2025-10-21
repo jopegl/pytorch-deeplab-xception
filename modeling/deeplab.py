@@ -24,13 +24,24 @@ class DeepLab(nn.Module):
 
         self.freeze_bn = freeze_bn
 
+        self.area_head = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Flatten(),
+            nn.Linear(2048, 64),  # ajuste o número de canais de entrada conforme o backbone
+            nn.ReLU(),
+            nn.Linear(64, 1)
+        )
+
     def forward(self, input):
         x, low_level_feat = self.backbone(input)
         x = self.aspp(x)
         x = self.decoder(x, low_level_feat)
         x = F.interpolate(x, size=input.size()[2:], mode='bilinear', align_corners=True)
 
-        return x
+
+        area_out = self.area_head(x) 
+
+        return x, low_level_feat, area_out
 
     def freeze_bn(self):
         for m in self.modules():

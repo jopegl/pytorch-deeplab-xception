@@ -119,6 +119,15 @@ class Xception(nn.Module):
         else:
             raise NotImplementedError
 
+        self.area_head = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),   # reduz [B, C, H, W] -> [B, C, 1, 1]
+            nn.Flatten(),              # vira [B, C]
+            nn.Linear(2048, 64),  # ajusta se necessário (ver abaixo)
+            nn.ReLU(),
+            nn.Linear(64, 1)     
+        )     
+
+
 
         # Entry flow
         self.conv1 = nn.Conv2d(inplanes, 32, 3, stride=2, padding=1, bias=False)
@@ -218,7 +227,11 @@ class Xception(nn.Module):
         x = self.bn5(x)
         x = self.relu(x)
 
-        return x, low_level_feat
+        seg_head = x
+
+        area_out = self.area_head(seg_head)
+
+        return x, low_level_feat, area_out
 
     def _init_weight(self):
         for m in self.modules():

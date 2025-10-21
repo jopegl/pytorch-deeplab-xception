@@ -13,7 +13,7 @@ from utils.lr_scheduler import LR_Scheduler
 from utils.saver import Saver
 from utils.summaries import TensorboardSummary
 from utils.metrics import Evaluator
-from area_loss_fn import hadamard_mse_loss
+from area_loss_fn import WeightedMSELoss
 
 class Trainer(object):
     def __init__(self, args):
@@ -57,7 +57,7 @@ class Trainer(object):
             weight = None
         self.criterion = SegmentationLosses(weight=weight, cuda=args.cuda).build_loss(mode=args.loss_type)
         self.model, self.optimizer = model, optimizer
-        self.area_loss_fn = torch.nn.CrossEntropyLoss(ignore_index=255)
+        self.area_loss_func = WeightedMSELoss()
         
         # Define Evaluator
         self.evaluator = Evaluator(self.nclass)
@@ -99,16 +99,20 @@ class Trainer(object):
         tbar = tqdm(self.train_loader)
         num_img_tr = len(self.train_loader)
         for i, sample in enumerate(tbar):
-            image, target = sample
+            image, target, area_target = sample
             if self.args.cuda:
                 image, target = image.cuda(), target.cuda()
             self.scheduler(self.optimizer, i, epoch, self.best_pred)
             self.optimizer.zero_grad()
-            output = self.model(image)
-            loss = self.criterion(output, target)
-            loss.backward()
+            seg_out, _, area_out = self.model(image)
+            loss = self.criterion(seg_out, target)
+            loss.backward(retain_graph = True)
+            weights = torch.ones_like(target)
+            area_loss_fn = self.area_loss_func(area_out, area_target, weights)
+            area_loss_fn.backward()
             self.optimizer.step()
             train_loss += loss.item()
+            area_loss += area_loss_fn().item()
             tbar.set_description('Train loss: %.3f' % (train_loss / (i + 1)))
             self.writer.add_scalar('train/total_loss_iter', loss.item(), i + num_img_tr * epoch)
 
@@ -120,6 +124,7 @@ class Trainer(object):
         self.writer.add_scalar('train/total_loss_epoch', train_loss, epoch)
         print('[Epoch: %d, numImages: %5d]' % (epoch, i * self.args.batch_size + image.data.shape[0]))
         print('Loss: %.3f' % train_loss)
+        print("Area Loss: ", area_loss)
 
         if self.args.no_val:
             # save checkpoint every epoch
@@ -138,9 +143,9 @@ class Trainer(object):
         tbar = tqdm(self.val_loader, desc='\r')
         test_loss = 0.0
         for i, sample in enumerate(tbar):
-            image, target = sample
+            image, target, area = sample
             if self.args.cuda:
-                image, target = image.cuda(), target.cuda()
+                image, target, area = image.cuda(), target.cuda()
             with torch.no_grad():
                 output = self.model(image)
             loss = self.criterion(output, target)

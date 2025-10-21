@@ -12,12 +12,14 @@ class LeafSegmentation(Dataset):
         self.args = args
         self.split = split
         
-        base_dir = os.path.join("leaf")  
-        self.image_dir = os.path.join(base_dir, "images", split)
-        self.mask_dir = os.path.join(base_dir, "masks_png", split)
+        base_dir = os.path.join("leaf_data")  
+        self.image_dir = os.path.join(base_dir, split,"images")
+        self.mask_dir = os.path.join(base_dir, split,"masks")
+        self.area_dir = os.path.join(base_dir, split,'area')
 
         self.images = sorted(os.listdir(self.image_dir))
         self.masks = sorted(os.listdir(self.mask_dir))
+        self.areas = sorted(os.listdir(self.area_dir))
 
         self.image_transform = transforms.Compose([
             transforms.ToTensor(),
@@ -30,11 +32,22 @@ class LeafSegmentation(Dataset):
     def __getitem__(self, index):
         img_path = os.path.join(self.image_dir, self.images[index])
         mask_path = os.path.join(self.mask_dir, self.masks[index])
+        area_path = os.path.join(self.area_dir, self.areas[index])
 
         image = Image.open(img_path).convert('RGB')
         mask = Image.open(mask_path)
 
         image = self.image_transform(image)
         mask = torch.from_numpy(np.array(mask)).long()
+        area = np.fromfile(area_path, dtype=np.float32)
+        if area.size != 512*512:
+            # redimensiona ou preenche com zeros
+            area_resized = np.zeros((512*512,), dtype=np.float32)
+            area_resized[:min(area.size, 512*512)] = area[:min(area.size, 512*512)]
+            area = area_resized
+        area = area.reshape((512,512))
+        area = torch.tensor(area, dtype=torch.float32)
 
-        return image, mask
+
+
+        return image, mask, area
