@@ -39,15 +39,9 @@ class LeafSegmentation(Dataset):
 
         image = self.image_transform(image)
         mask = torch.from_numpy(np.array(mask)).long()
-        area = np.fromfile(area_path, dtype=np.float32)
-        if area.size != 512*512:
-            # redimensiona ou preenche com zeros
-            area_resized = np.zeros((512*512,), dtype=np.float32)
-            area_resized[:min(area.size, 512*512)] = area[:min(area.size, 512*512)]
-            area = area_resized
-        area = area.reshape((512,512))
-        area = torch.tensor(area, dtype=torch.float32)
+        area = Image.open(area_path).convert('L')
+        area = torch.from_numpy(np.array(area)).float()
 
-
+        area /= 255.0
 
         return image, mask, area

@@ -25,23 +25,26 @@ class DeepLab(nn.Module):
         self.freeze_bn = freeze_bn
 
         self.area_head = nn.Sequential(
-            nn.AdaptiveAvgPool2d(1),
-            nn.Flatten(),
-            nn.Linear(2048, 64),  # ajuste o número de canais de entrada conforme o backbone
+            nn.Conv2d(in_channels=384, out_channels=256, kernel_size=3, padding = 1),
+            nn.BatchNorm2d(256),
             nn.ReLU(),
-            nn.Linear(64, 1)
+            nn.Upsample(size=(1024,1024), mode = 'bilinear', align_corners=True),
+            nn.Conv2d(in_channels = 256, out_channels = 256, kernel_size=1)
         )
 
     def forward(self, input):
         x, low_level_feat = self.backbone(input)
         x = self.aspp(x)
-        x = self.decoder(x, low_level_feat)
-        x = F.interpolate(x, size=input.size()[2:], mode='bilinear', align_corners=True)
+        x_aspp = x
+        seg_out_raw = self.decoder(x_aspp, low_level_feat)
+        seg_out = F.interpolate(seg_out_raw, size=input.size()[2:], mode='bilinear', align_corners=True)
+        x_aspp_up = F.interpolate(x_aspp, size=low_level_feat.size()[2:], mode='bilinear', align_corners=True)
 
+        concated = torch.concat([x_aspp_up, low_level_feat], dim = 1)
 
-        area_out = self.area_head(x) 
+        area_out = self.area_head(concated) 
 
-        return x, low_level_feat, area_out
+        return seg_out, low_level_feat, area_out
 
     def freeze_bn(self):
         for m in self.modules():

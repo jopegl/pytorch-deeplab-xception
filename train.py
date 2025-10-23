@@ -35,7 +35,7 @@ class Trainer(object):
                         backbone=args.backbone,
                         output_stride=args.out_stride,
                         sync_bn=args.sync_bn,
-                        freeze_bn=args.freeze_bn)
+                        freeze_bn=True)
 
         train_params = [{'params': model.get_1x_lr_params(), 'lr': args.lr},
                         {'params': model.get_10x_lr_params(), 'lr': args.lr * 10}]
@@ -101,25 +101,41 @@ class Trainer(object):
         for i, sample in enumerate(tbar):
             image, target, area_target = sample
             if self.args.cuda:
-                image, target = image.cuda(), target.cuda()
+                image, target, area_target = image.cuda(), target.cuda(), area_target.cuda()
             self.scheduler(self.optimizer, i, epoch, self.best_pred)
             self.optimizer.zero_grad()
             seg_out, _, area_out = self.model(image)
+
+            if torch.isnan(seg_out).any() or torch.isinf(seg_out).any():
+                print("NaN/Inf detected in seg_out — skipping batch")
+                continue
+            if torch.isnan(area_out).any() or torch.isinf(area_out).any():
+                print("NaN/Inf detected in area_out — skipping batch")
+                continue
+
+            if torch.isnan(seg_out).any():
+                print("NaN detected in seg_out!")
+                continue
+            if torch.isnan(area_out).any():
+                print("NaN detected in area_out!")
+                continue
+
             loss = self.criterion(seg_out, target)
-            loss.backward(retain_graph = True)
-            weights = torch.ones_like(target)
-            area_loss_fn = self.area_loss_func(area_out, area_target, weights)
-            area_loss_fn.backward()
+            area_loss_fn = self.area_loss_func(area_out, area_target, torch.ones_like(area_target))
+
+            total_loss = area_loss_fn * 0.01 + loss
+            total_loss.backward()
             self.optimizer.step()
             train_loss += loss.item()
-            area_loss += area_loss_fn().item()
+            area_loss += area_loss_fn.item()
             tbar.set_description('Train loss: %.3f' % (train_loss / (i + 1)))
+
             self.writer.add_scalar('train/total_loss_iter', loss.item(), i + num_img_tr * epoch)
 
             # Show 10 * 3 inference results each epoch
             if i % (num_img_tr // 10) == 0:
                 global_step = i + num_img_tr * epoch
-                self.summary.visualize_image(self.writer, self.args.dataset, image, target, output, global_step)
+                self.summary.visualize_image(self.writer, self.args.dataset, image, target, seg_out, global_step)
 
         self.writer.add_scalar('train/total_loss_epoch', train_loss, epoch)
         print('[Epoch: %d, numImages: %5d]' % (epoch, i * self.args.batch_size + image.data.shape[0]))
@@ -142,15 +158,19 @@ class Trainer(object):
         self.evaluator.reset()
         tbar = tqdm(self.val_loader, desc='\r')
         test_loss = 0.0
+        test_area_loss = 0.0
         for i, sample in enumerate(tbar):
-            image, target, area = sample
+            image, target, area_target = sample
             if self.args.cuda:
-                image, target, area = image.cuda(), target.cuda()
+                image, target, area_target = image.cuda(), target.cuda(), area_target.cuda()
             with torch.no_grad():
-                output = self.model(image)
+                output, _, area_out = self.model(image)
             loss = self.criterion(output, target)
+            area_loss = self.area_loss_func(area_out, area_target, torch.ones_like(area_target))
             test_loss += loss.item()
-            tbar.set_description('Test loss: %.3f' % (test_loss / (i + 1)))
+            test_area_loss += area_loss.item()
+            total_loss = test_loss + test_area_loss * 0.01
+            tbar.set_description('Totalloss: %.3f' % (total_loss / (i + 1)))
             pred = output.data.cpu().numpy()
             target = target.cpu().numpy()
             pred = np.argmax(pred, axis=1)
@@ -184,6 +204,8 @@ class Trainer(object):
             }, is_best)
 
 def main():
+    torch.autograd.set_detect_anomaly(True)
+
     parser = argparse.ArgumentParser(description="PyTorch DeeplabV3Plus Training")
     parser.add_argument('--backbone', type=str, default='resnet',
                         choices=['resnet', 'xception', 'drn', 'mobilenet'],
