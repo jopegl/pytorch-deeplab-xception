@@ -11,15 +11,27 @@ class LeafSegmentation(Dataset):
     def __init__(self, args, split="train"):
         self.args = args
         self.split = split
+
+        self.image_paths = []
+        self.mask_paths = []
+        self.area_paths = []
         
-        base_dir = os.path.join("leaf_data")  
-        self.image_dir = os.path.join(base_dir, split,"images")
-        self.mask_dir = os.path.join(base_dir, split,"masks")
-        self.area_dir = os.path.join(base_dir, split,'area')
+        base_dir = os.path.join("split_dataset")
+        dir_with_splits = os.path.join(base_dir, split)
+        for leaf_id in sorted(os.listdir(dir_with_splits)):
+            leaf_path = os.path.join(dir_with_splits, leaf_id)
+            self.image_dir = os.path.join(leaf_path, split,"images")
+            self.mask_dir = os.path.join(leaf_path, split,"masks")
+            self.area_dir = os.path.join(leaf_path, split,'area')
 
         self.images = sorted(os.listdir(self.image_dir))
         self.masks = sorted(os.listdir(self.mask_dir))
         self.areas = sorted(os.listdir(self.area_dir))
+
+        for image, mask, area in zip(self.images,self.masks, self.areas):
+            self.image_paths.append(os.path.join(self.image_dir, image))
+            self.mask_paths.append(os.path.join(self.mask_dir, mask))
+            self.area_paths.append(os.path.join(self.area_dir, area))
 
         self.image_transform = transforms.Compose([
             transforms.ToTensor(),
@@ -30,18 +42,17 @@ class LeafSegmentation(Dataset):
         return len(self.images)
 
     def __getitem__(self, index):
-        img_path = os.path.join(self.image_dir, self.images[index])
-        mask_path = os.path.join(self.mask_dir, self.masks[index])
-        area_path = os.path.join(self.area_dir, self.areas[index])
+        img_path = self.image_paths[index]
+        mask_path = self.mask_paths[index]
+        area_path = self.area_paths[index]
 
         image = Image.open(img_path).convert('RGB')
         mask = Image.open(mask_path)
 
         image = self.image_transform(image)
         mask = torch.from_numpy(np.array(mask)).long()
-        area = Image.open(area_path).convert('L')
-        area = torch.from_numpy(np.array(area)).float()
-
-        area /= 255.0
+        area_data = np.fromfile(area_path, dtype=np.uint8)
+        area_data = area_data.reshape((1024, 1024))  # ajustável
+        area = torch.from_numpy(area_data).float() / 255.0
 
         return image, mask, area
