@@ -16,7 +16,7 @@ class LeafSegmentation(Dataset):
         self.mask_paths = []
         self.area_paths = []
         
-        base_dir = os.path.join("split_dataset")
+        base_dir = os.path.join("/content/drive/MyDrive/split_dataset")
         dir_with_splits = os.path.join(base_dir, split)
         for leaf_id in sorted(os.listdir(dir_with_splits)):
             leaf_path = os.path.join(dir_with_splits, leaf_id)
