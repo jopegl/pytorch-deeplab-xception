@@ -39,7 +39,7 @@ class DeepLab(nn.Module):
         )
 
         self.changes_after_aspp = nn.Sequential(
-            nn.Conv2d(in_channels=128, out_channels=256, kernel_size=1),
+            nn.Conv2d(in_channels=256, out_channels=256, kernel_size=1),
             nn.BatchNorm2d(256),
             nn.ReLU(),
             nn.Upsample(mode = 'bilinear', align_corners=True, scale_factor=4)
