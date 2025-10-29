@@ -20,9 +20,9 @@ class LeafSegmentation(Dataset):
         dir_with_splits = os.path.join(base_dir, split)
         for leaf_id in sorted(os.listdir(dir_with_splits)):
             leaf_path = os.path.join(dir_with_splits, leaf_id)
-            self.image_dir = os.path.join(leaf_path, split,"images")
-            self.mask_dir = os.path.join(leaf_path, split,"masks")
-            self.area_dir = os.path.join(leaf_path, split,'area')
+            self.image_dir = os.path.join(leaf_path,"images")
+            self.mask_dir = os.path.join(leaf_path,"masks")
+            self.area_dir = os.path.join(leaf_path,'area')
 
         self.images = sorted(os.listdir(self.image_dir))
         self.masks = sorted(os.listdir(self.mask_dir))

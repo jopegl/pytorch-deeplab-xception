@@ -25,11 +25,24 @@ class DeepLab(nn.Module):
         self.freeze_bn = freeze_bn
 
         self.area_head = nn.Sequential(
-            nn.Conv2d(in_channels=384, out_channels=256, kernel_size=3, padding = 1),
+            nn.Conv2d(in_channels=512, out_channels=256, kernel_size=3, padding = 1),
             nn.BatchNorm2d(256),
             nn.ReLU(),
-            nn.Upsample(size=(1024,1024), mode = 'bilinear', align_corners=True),
-            nn.Conv2d(in_channels = 256, out_channels = 256, kernel_size=1)
+            nn.Conv2d(in_channels = 256, out_channels = 256, kernel_size=1),
+            nn.Upsample(mode = 'bilinear', align_corners=True, scale_factor=4)
+        )
+
+        self.low_levet_changes = nn.Sequential (
+            nn.Conv2d(in_channels=256, out_channels=256, kernel_size=1),
+            nn.BatchNorm2d(256),
+            nn.ReLU()
+        )
+
+        self.changes_after_aspp = nn.Sequential(
+            nn.Conv2d(in_channels=256, out_channels=256, kernel_size=1),
+            nn.BatchNorm2d(256),
+            nn.ReLU(),
+            nn.Upsample(mode = 'bilinear', align_corners=True, scale_factor=4)
         )
 
     def forward(self, input):
@@ -37,10 +50,11 @@ class DeepLab(nn.Module):
         x = self.aspp(x)
         x_aspp = x
         seg_out_raw = self.decoder(x_aspp, low_level_feat)
-        seg_out = F.interpolate(seg_out_raw, size=input.size()[2:], mode='bilinear', align_corners=True)
-        x_aspp_up = F.interpolate(x_aspp, size=low_level_feat.size()[2:], mode='bilinear', align_corners=True)
+        low_level_feat = self.low_levet_changes(low_level_feat)
+        x_aspp = self.changes_after_aspp(x_aspp)
 
-        concated = torch.concat([x_aspp_up, low_level_feat], dim = 1)
+        seg_out = F.interpolate(seg_out_raw, size=input.size()[2:], mode='bilinear', align_corners=True)
+        concated = torch.concat([x_aspp, low_level_feat], dim = 1)
 
         area_out = self.area_head(concated) 
 
