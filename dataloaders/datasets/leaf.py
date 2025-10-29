@@ -48,7 +48,7 @@ class LeafSegmentation(Dataset):
 
         image = Image.open(img_path).convert('RGB')
         mask_data = np.fromfile(mask_path, dtype=np.uint8)
-        mask_data = mask_data.reshape((512, 512)) 
+        mask_data = mask_data.reshape((512, 512))
         mask = torch.from_numpy(mask_data).long()
 
         image = self.image_transform(image)
