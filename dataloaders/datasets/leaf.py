@@ -4,6 +4,7 @@ import torch
 from torch.utils.data import Dataset
 import torchvision.transforms as transforms
 import numpy as np
+import torch.nn.functional as F
 
 class LeafSegmentation(Dataset):
     NUM_CLASSES = 3 
@@ -49,7 +50,8 @@ class LeafSegmentation(Dataset):
         image = Image.open(img_path).convert('RGB')
         mask_data = np.fromfile(mask_path, dtype=np.uint8)
         mask_data = mask_data.reshape((512, 512))
-        mask = torch.from_numpy(mask_data).long()
+        mask_data = torch.from_numpy(mask_data).long()
+        mask = F.interpolate(mask_data.unsqueeze(0).unsqueeze(0).float(), size=(1024, 1024), mode='nearest').squeeze(0).squeeze(0).long()
 
         image = self.image_transform(image)
         mask = torch.from_numpy(np.array(mask)).long()
