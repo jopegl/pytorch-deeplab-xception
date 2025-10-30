@@ -40,7 +40,7 @@ class LeafSegmentation(Dataset):
         ])
 
     def __len__(self):
-        return len(self.images)
+        return len(self.image_paths)
 
     def __getitem__(self, index):
         img_path = self.image_paths[index]
