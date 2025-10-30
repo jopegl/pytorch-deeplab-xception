@@ -62,5 +62,6 @@ class Saver(object):
     
     def save_checkpoint_always(self, state, filename='checkpoint.pth.tar'):
         """Saves checkpoint to disk"""
+        os.makedirs('always_saver', exist_ok=True)
         filename = os.path.join('always_saver', filename)
         torch.save(state, filename)
