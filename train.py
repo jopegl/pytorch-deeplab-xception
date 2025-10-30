@@ -148,6 +148,12 @@ class Trainer(object):
                 'optimizer': self.optimizer.state_dict(),
                 'best_pred': self.best_pred,
             }, is_best)
+        self.saver.save_checkpoint_always({
+                'epoch': epoch + 1,
+                'state_dict': self.model.module.state_dict(),
+                'optimizer': self.optimizer.state_dict(),
+                'best_pred': self.best_pred,
+            }, filename='checkpoint_epoch_{}.pth.tar'.format(epoch + 1))
 
 
     def validation(self, epoch):
