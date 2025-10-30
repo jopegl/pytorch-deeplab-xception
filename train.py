@@ -187,6 +187,8 @@ class Trainer(object):
         Acc_class = self.evaluator.Pixel_Accuracy_Class()
         mIoU = self.evaluator.Mean_Intersection_over_Union()
         FWIoU = self.evaluator.Frequency_Weighted_Intersection_over_Union()
+        with torch.inference_mode():
+            area_acc = self.evaluator.area_accuracy(area_out.cpu().numpy(), area_target.cpu().numpy())
         self.writer.add_scalar('val/total_loss_epoch', test_loss, epoch)
         self.writer.add_scalar('val/mIoU', mIoU, epoch)
         self.writer.add_scalar('val/Acc', Acc, epoch)
@@ -195,7 +197,9 @@ class Trainer(object):
         print('Validation:')
         print('[Epoch: %d, numImages: %5d]' % (epoch, i * self.args.batch_size + image.data.shape[0]))
         print("Acc:{}, Acc_class:{}, mIoU:{}, fwIoU: {}".format(Acc, Acc_class, mIoU, FWIoU))
+        print("Area Accuracy: ", area_acc)
         print('Loss: %.3f' % test_loss)
+        print('Area Loss: %.3f' % test_area_loss)
 
         new_pred = mIoU
         if new_pred > self.best_pred:
