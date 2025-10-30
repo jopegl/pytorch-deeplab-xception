@@ -11,6 +11,9 @@ class WeightedMSELoss(nn.Module):
             predictions = predictions.mean(dim=1, keepdim=True) 
         if predictions.shape[-2:] != targets.shape[-2:]:
             predictions = F.interpolate(predictions, size=targets.shape[-2:], mode='bilinear', align_corners=False)
+        if targets.ndim == 3:
+            targets = targets.unsqueeze(1)
+
         raw_loss = F.mse_loss(predictions, targets, reduction='none')
         weighted_loss = raw_loss * weights
         area_loss_sum = torch.sum(weighted_loss)
