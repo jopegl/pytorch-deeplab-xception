@@ -106,12 +106,12 @@ class Trainer(object):
             self.scheduler(self.optimizer, i, epoch, self.best_pred)
             self.optimizer.zero_grad()
             seg_out, _, area_out = self.model(image)
+            seg_out = F.interpolate(seg_out, size=target.shape[1:], mode='bilinear', align_corners=True)
 
             # debug / correção: garante que seg_out tem o mesmo spatial size do target
             # e que target está no tipo correto
             print("DEBUG before interp - seg_out.shape:", seg_out.shape, "target.shape:", target.shape)
             # se target for [N, H, W], a size deve ser target.shape[1:]
-            seg_out = F.interpolate(seg_out, size=target.shape[1:], mode='bilinear', align_corners=True)
             # confirma tipos e device
             if target.dtype != torch.long:
                 target = target.long()
