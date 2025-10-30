@@ -106,19 +106,16 @@ class Trainer(object):
             self.optimizer.zero_grad()
             seg_out, _, area_out = self.model(image)
 
-            if torch.isnan(seg_out).any() or torch.isinf(seg_out).any():
-                print("NaN/Inf detected in seg_out — skipping batch")
-                continue
-            if torch.isnan(area_out).any() or torch.isinf(area_out).any():
-                print("NaN/Inf detected in area_out — skipping batch")
-                continue
-
-            if torch.isnan(seg_out).any():
-                print("NaN detected in seg_out!")
-                continue
-            if torch.isnan(area_out).any():
-                print("NaN detected in area_out!")
-                continue
+            # debug / correção: garante que seg_out tem o mesmo spatial size do target
+            # e que target está no tipo correto
+            print("DEBUG before interp - seg_out.shape:", seg_out.shape, "target.shape:", target.shape)
+            # se target for [N, H, W], a size deve ser target.shape[1:]
+            seg_out = F.interpolate(seg_out, size=target.shape[1:], mode='bilinear', align_corners=True)
+            # confirma tipos e device
+            if target.dtype != torch.long:
+                target = target.long()
+            seg_out = seg_out.to(target.device)
+            print("DEBUG after interp  - seg_out.shape:", seg_out.shape, "target.shape:", target.shape)
 
             loss = self.criterion(seg_out, target)
             area_loss_fn = self.area_loss_func(area_out, area_target, torch.ones_like(area_target))
