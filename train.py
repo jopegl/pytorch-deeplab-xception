@@ -163,6 +163,8 @@ class Trainer(object):
                 image, target, area_target = image.cuda(), target.cuda(), area_target.cuda()
             with torch.no_grad():
                 output, _, area_out = self.model(image)
+                output = F.interpolate(output, size=target.shape[1:], mode='bilinear', align_corners=True)
+                output = output.to(target.device)
             loss = self.criterion(output, target)
             area_loss = self.area_loss_func(area_out, area_target, torch.ones_like(area_target))
             test_loss += loss.item()
