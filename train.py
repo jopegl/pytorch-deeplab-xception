@@ -97,7 +97,7 @@ class Trainer(object):
         area_loss = 0
         self.model.train()
         tbar = tqdm(self.train_loader)
-        num_img_tr = len(self.train_loader)
+        num_img_tr = len(self.train_loader.dataset)
         print("Num images in train loader: ", num_img_tr)
         for i, sample in enumerate(tbar):
             image, target, area_target = sample
