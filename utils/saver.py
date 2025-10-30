@@ -58,3 +58,9 @@ class Saver(object):
         for key, val in p.items():
             log_file.write(key + ':' + str(val) + '\n')
         log_file.close()
+
+    
+    def save_checkpoint_always(self, state, filename='checkpoint.pth.tar'):
+        """Saves checkpoint to disk"""
+        filename = os.path.join('always_saver', filename)
+        torch.save(state, filename)

@@ -45,6 +45,13 @@ class Evaluator(object):
     def reset(self):
         self.confusion_matrix = np.zeros((self.num_class,) * 2)
 
+    def area_accuracy(self, pred_area, target_area):
+        pred_area = pred_area.flatten()
+        target_area = target_area.flatten()
+        correct = np.sum((pred_area >= 0.5) == (target_area >= 0.5))
+        total = len(target_area)
+        return correct / total
+
 
 
 
