@@ -51,6 +51,8 @@ class Evaluator(object):
         pred_area = pred_area.flatten()
         target_area = target_area.flatten()
         pred_area = F.interpolate(pred_area, size=target_area.shape[2:], mode='bilinear', align_corners=False)
+        pred_area = pred_area.cpu().numpy().flatten()
+        target_area = target_area.cpu().numpy().flatten()
         correct = np.sum((pred_area >= 0.5) == (target_area >= 0.5))
         total = len(target_area)
         return correct / total
