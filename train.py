@@ -98,6 +98,7 @@ class Trainer(object):
         self.model.train()
         tbar = tqdm(self.train_loader)
         num_img_tr = len(self.train_loader)
+        print("Num images in train loader: ", num_img_tr)
         for i, sample in enumerate(tbar):
             image, target, area_target = sample
             if self.args.cuda:
