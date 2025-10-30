@@ -140,10 +140,9 @@ class Trainer(object):
         print('Loss: %.3f' % train_loss)
         print("Area Loss: ", area_loss)
 
-        if self.args.no_val:
             # save checkpoint every epoch
-            is_best = False
-            self.saver.save_checkpoint({
+        is_best = False
+        self.saver.save_checkpoint({
                 'epoch': epoch + 1,
                 'state_dict': self.model.module.state_dict(),
                 'optimizer': self.optimizer.state_dict(),
