@@ -28,7 +28,7 @@ class DeepLab(nn.Module):
             nn.Conv2d(in_channels=512, out_channels=256, kernel_size=3, padding = 1),
             nn.BatchNorm2d(256),
             nn.ReLU(),
-            nn.Conv2d(in_channels = 256, out_channels = 256, kernel_size=1),
+            nn.Conv2d(in_channels = 256, out_channels = 1, kernel_size=1),
             nn.Upsample(mode = 'bilinear', align_corners=True, scale_factor=4)
         )
 
