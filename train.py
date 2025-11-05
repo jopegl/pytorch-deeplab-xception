@@ -117,6 +117,7 @@ class Trainer(object):
             train_loss += loss.item()
             area_loss += area_loss_fn.item()
             tbar.set_description('Train loss: %.3f' % (train_loss / (i + 1)))
+            tbar.set_description('Area loss: %.3f' % (area_loss / (i + 1)))
 
             self.writer.add_scalar('train/total_loss_iter', loss.item(), i + num_img_tr * epoch)
 
