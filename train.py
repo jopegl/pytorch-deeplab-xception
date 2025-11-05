@@ -108,17 +108,6 @@ class Trainer(object):
             seg_out, _, area_out = self.model(image)
             seg_out = F.interpolate(seg_out, size=target.shape[1:], mode='bilinear', align_corners=True)
 
-            # debug / correção: garante que seg_out tem o mesmo spatial size do target
-            # e que target está no tipo correto
-            print("DEBUG before interp - seg_out.shape:", seg_out.shape, "target.shape:", target.shape)
-            # se target for [N, H, W], a size deve ser target.shape[1:]
-            # confirma tipos e device
-            if target.dtype != torch.long:
-                target = target.long()
-            seg_out = seg_out.to(target.device)
-            print("DEBUG area_out shape:", area_out.shape, "area_target shape:", area_target.shape)
-            print("DEBUG after interp  - seg_out.shape:", seg_out.shape, "target.shape:", target.shape)
-
             loss = self.criterion(seg_out, target)
             area_loss_fn = self.area_loss_func(area_out, area_target, torch.ones_like(area_target))
 
