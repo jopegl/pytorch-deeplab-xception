@@ -25,14 +25,14 @@ class LeafSegmentation(Dataset):
             self.mask_dir = os.path.join(leaf_path,"segmentation")
             self.area_dir = os.path.join(leaf_path,'area')
 
-        images = sorted(os.listdir(self.image_dir))
-        masks = sorted(os.listdir(self.mask_dir))
-        areas = sorted(os.listdir(self.area_dir))
+            images = sorted(os.listdir(self.image_dir))
+            masks = sorted(os.listdir(self.mask_dir))
+            areas = sorted(os.listdir(self.area_dir))
 
-        for image, mask, area in zip(images, masks, areas):
-            self.image_paths.append(os.path.join(self.image_dir, image))
-            self.mask_paths.append(os.path.join(self.mask_dir, mask))
-            self.area_paths.append(os.path.join(self.area_dir, area))
+            for image, mask, area in zip(images, masks, areas):
+                self.image_paths.append(os.path.join(self.image_dir, image))
+                self.mask_paths.append(os.path.join(self.mask_dir, mask))
+                self.area_paths.append(os.path.join(self.area_dir, area))
 
         self.image_transform = transforms.Compose([
             transforms.ToTensor(),
