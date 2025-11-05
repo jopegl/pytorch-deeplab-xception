@@ -116,6 +116,7 @@ class Trainer(object):
             if target.dtype != torch.long:
                 target = target.long()
             seg_out = seg_out.to(target.device)
+            print("DEBUG area_out shape:", area_out.shape, "area_target shape:", area_target.shape)
             print("DEBUG after interp  - seg_out.shape:", seg_out.shape, "target.shape:", target.shape)
 
             loss = self.criterion(seg_out, target)
