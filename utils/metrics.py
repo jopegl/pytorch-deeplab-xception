@@ -48,14 +48,29 @@ class Evaluator(object):
         self.confusion_matrix = np.zeros((self.num_class,) * 2)
 
     def area_accuracy(self, pred_area, target_area):
-        pred_area = pred_area.flatten()
-        target_area = target_area.flatten()
+    # pred_area e target_area: (B, 1, H, W)
+
+        # garante formato consistente
+        if pred_area.dim() == 3:  # (B, H, W)
+            pred_area = pred_area.unsqueeze(1)
+        if target_area.dim() == 3:
+            target_area = target_area.unsqueeze(1)
+
+        # resize do mapa previsto para o tamanho do mapa ground-truth
         pred_area = F.interpolate(pred_area, size=target_area.shape[2:], mode='bilinear', align_corners=False)
-        pred_area = pred_area.cpu().numpy().flatten()
-        target_area = target_area.cpu().numpy().flatten()
-        correct = np.sum((pred_area >= 0.5) == (target_area >= 0.5))
-        total = len(target_area)
+
+        # binarização
+        pred_bin = (pred_area >= 0.5).float()
+        target_bin = (target_area >= 0.5).float()
+
+        # flatten para comparar pixel a pixel
+        pred_flat = pred_bin.view(-1)
+        target_flat = target_bin.view(-1)
+
+        correct = (pred_flat == target_flat).sum().item()
+        total = target_flat.numel()
         return correct / total
+
 
 
 
