@@ -50,6 +50,8 @@ class Evaluator(object):
     def area_accuracy(self, pred_area, target_area):
     # pred_area e target_area: (B, 1, H, W)
 
+        print("Min max: ", target_area.min(), target_area.max())
+
         # garante formato consistente
         if pred_area.dim() == 3:  # (B, H, W)
             pred_area = pred_area.unsqueeze(1)
