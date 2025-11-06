@@ -107,7 +107,7 @@ class Trainer(object):
             self.optimizer.zero_grad()
             seg_out, _, area_out = self.model(image)
             seg_out = F.interpolate(seg_out, size=target.shape[1:], mode='bilinear', align_corners=True)
-            area_out = F.interpolate(area_out, size=area_target.shape[1:], mode='bilinear', align_corners=True)
+            area_out = F.interpolate(area_out, size=area_target.shape[2:], mode='bilinear', align_corners=True)
 
             print('area out shape: ', area_out.shape)
             print('seg_out shape: ', seg_out.shape)
@@ -168,7 +168,7 @@ class Trainer(object):
             with torch.no_grad():
                 output, _, area_out = self.model(image)
                 output = F.interpolate(output, size=target.shape[1:], mode='bilinear', align_corners=True)
-                area_out = F.interpolate(area_out, size=area_target.shape[1:], mode='bilinear', align_corners=True)
+                area_out = F.interpolate(area_out, size=area_target.shape[2:], mode='bilinear', align_corners=True)
                 area_out = area_out.to(area_target.device)
                 output = output.to(target.device)
             loss = self.criterion(output, target)
