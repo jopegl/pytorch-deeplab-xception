@@ -14,6 +14,7 @@ class WeightedMSELoss(nn.Module):
         if targets.ndim == 3:
             targets = targets.unsqueeze(1)
 
+        #perguntar sobre o produto de hadamaard, não estou entendendo como usar os pesos
         raw_loss = F.mse_loss(predictions, targets, reduction='none')
         weighted_loss = raw_loss * weights
         area_loss_sum = torch.sum(weighted_loss)

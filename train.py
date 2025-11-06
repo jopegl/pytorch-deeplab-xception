@@ -57,7 +57,7 @@ class Trainer(object):
             weight = None
         self.criterion = SegmentationLosses(weight=weight, cuda=args.cuda).build_loss(mode=args.loss_type)
         self.model, self.optimizer = model, optimizer
-        self.area_loss_func = WeightedMSELoss()
+        self.mse_area_loss = nn.MSELoss()
         
         # Define Evaluator
         self.evaluator = Evaluator(self.nclass)
@@ -107,19 +107,21 @@ class Trainer(object):
             self.optimizer.zero_grad()
             seg_out, _, area_out = self.model(image)
             seg_out = F.interpolate(seg_out, size=target.shape[1:], mode='bilinear', align_corners=True)
+            final_area_pred = area_out*seg_out
 
             loss = self.criterion(seg_out, target)
-            area_loss_fn = self.area_loss_func(area_out, area_target, torch.ones_like(area_target))
+            area_loss_fn = self.mse_area_loss(final_area_pred, area_target)
 
             total_loss = area_loss_fn * 0.01 + loss
             total_loss.backward()
             self.optimizer.step()
             train_loss += loss.item()
             area_loss += area_loss_fn.item()
-            tbar.set_description('Train loss: %.3f' % (train_loss / (i + 1)))
-            tbar.set_description('Area loss: %.3f' % (area_loss / (i + 1)))
+            train_l = train_loss / (i + 1)
+            area_l = area_loss / (i + 1)
+            tbar.set_description(f'Train loss: {train_l:.3f}, Area loss: {area_l:.3f}')
 
-            self.writer.add_scalar('train/total_loss_iter', loss.item(), i + num_img_tr * epoch)
+            self.writer.add_scalar('train/total_loss_iter', total_loss.item(), i + num_img_tr * epoch)
 
             # Show 10 * 3 inference results each epoch
             if i % (num_img_tr // 10) == 0:
@@ -162,7 +164,8 @@ class Trainer(object):
                 output = F.interpolate(output, size=target.shape[1:], mode='bilinear', align_corners=True)
                 output = output.to(target.device)
             loss = self.criterion(output, target)
-            area_loss = self.area_loss_func(area_out, area_target, torch.ones_like(area_target))
+            final_area_pred = area_out*output
+            area_loss = self.mse_area_loss(final_area_pred, area_target)
             test_loss += loss.item()
             test_area_loss += area_loss.item()
             total_loss = test_loss + test_area_loss * 0.01
