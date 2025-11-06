@@ -1,6 +1,7 @@
 import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
+import torch
 
 
 class Evaluator(object):
@@ -57,21 +58,11 @@ class Evaluator(object):
             pred_area = pred_area.unsqueeze(1)
         if target_area.dim() == 3:
             target_area = target_area.unsqueeze(1)
-
-        # resize do mapa previsto para o tamanho do mapa ground-truth
+        
         pred_area = F.interpolate(pred_area, size=target_area.shape[2:], mode='bilinear', align_corners=False)
+        metric = torch.abs(pred_area - target_area).mean()
 
-        # binarização
-        pred_bin = (pred_area >= 0.5).float()
-        target_bin = (target_area >= 0.5).float()
-
-        # flatten para comparar pixel a pixel
-        pred_flat = pred_bin.view(-1)
-        target_flat = target_bin.view(-1)
-
-        correct = (pred_flat == target_flat).sum().item()
-        total = target_flat.numel()
-        return correct / total
+        return metric
 
 
 
