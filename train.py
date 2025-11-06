@@ -108,7 +108,12 @@ class Trainer(object):
             seg_out, _, area_out = self.model(image)
             seg_out = F.interpolate(seg_out, size=target.shape[1:], mode='bilinear', align_corners=True)
             area_out = F.interpolate(area_out, size=area_target.shape[1:], mode='bilinear', align_corners=True)
-            final_area_pred = area_out*seg_out
+
+            print('area out shape: ', area_out.shape)
+            print('seg_out shape: ', seg_out.shape)
+
+            leaf_seg_out = F.softmax(seg_out, dim=1)[:, 1:2, :, :]
+            final_area_pred = area_out*leaf_seg_out
 
             loss = self.criterion(seg_out, target)
             area_loss_fn = self.mse_area_loss(final_area_pred, area_target)
@@ -167,7 +172,8 @@ class Trainer(object):
                 area_out = area_out.to(area_target.device)
                 output = output.to(target.device)
             loss = self.criterion(output, target)
-            final_area_pred = area_out*output
+            leaf_seg_out_val = F.softmax(output, dim=1)[:, 1:2, :, :]
+            final_area_pred = area_out*leaf_seg_out_val
             area_loss = self.mse_area_loss(final_area_pred, area_target)
             test_loss += loss.item()
             test_area_loss += area_loss.item()
