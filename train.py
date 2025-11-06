@@ -107,6 +107,7 @@ class Trainer(object):
             self.optimizer.zero_grad()
             seg_out, _, area_out = self.model(image)
             seg_out = F.interpolate(seg_out, size=target.shape[1:], mode='bilinear', align_corners=True)
+            area_out = F.interpolate(area_out, size=area_target.shape[1:], mode='bilinear', align_corners=True)
             final_area_pred = area_out*seg_out
 
             loss = self.criterion(seg_out, target)
@@ -162,6 +163,8 @@ class Trainer(object):
             with torch.no_grad():
                 output, _, area_out = self.model(image)
                 output = F.interpolate(output, size=target.shape[1:], mode='bilinear', align_corners=True)
+                area_out = F.interpolate(area_out, size=area_target.shape[1:], mode='bilinear', align_corners=True)
+                area_out = area_out.to(area_target.device)
                 output = output.to(target.device)
             loss = self.criterion(output, target)
             final_area_pred = area_out*output
@@ -182,7 +185,7 @@ class Trainer(object):
         mIoU = self.evaluator.Mean_Intersection_over_Union()
         FWIoU = self.evaluator.Frequency_Weighted_Intersection_over_Union()
         with torch.inference_mode():
-            area_acc = self.evaluator.area_accuracy(area_out, area_target)
+            area_acc = self.evaluator.area_accuracy(final_area_pred, area_target)
         self.writer.add_scalar('val/total_loss_epoch', test_loss, epoch)
         self.writer.add_scalar('val/mIoU', mIoU, epoch)
         self.writer.add_scalar('val/Acc', Acc, epoch)
