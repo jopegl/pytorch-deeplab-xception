@@ -49,18 +49,16 @@ class Evaluator(object):
         self.confusion_matrix = np.zeros((self.num_class,) * 2)
 
     def area_accuracy(self, pred_area, target_area):
-    # pred_area e target_area: (B, 1, H, W)
-
-        print("Min max: ", target_area.min(), target_area.max())
-
-        # garante formato consistente
-        if pred_area.dim() == 3:  # (B, H, W)
+        #Garantir que as tensões tenham a dimensão correta
+        if pred_area.dim() == 3:  
             pred_area = pred_area.unsqueeze(1)
         if target_area.dim() == 3:
             target_area = target_area.unsqueeze(1)
         
-        pred_area = F.interpolate(pred_area, size=target_area.shape[2:], mode='bilinear', align_corners=False)
-        metric = torch.abs(pred_area - target_area).mean()
+        pred_area = F.interpolate(pred_area, size=target_area.shape[2:], mode='bilinear', align_corners=False) #Garantir que as áreas previstas e alvo tenham o mesmo tamanho espacial
+
+        mask = target_area > 0 
+        metric = torch.abs((pred_area - target_area) * mask).sum()/mask.sum() #media dos erros excluindo as partes que não são folha
 
         return metric
 
