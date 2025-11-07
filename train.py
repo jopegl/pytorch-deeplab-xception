@@ -115,7 +115,7 @@ class Trainer(object):
             loss = self.criterion(seg_out, target)
             area_loss_fn = self.mse_area_loss(final_area_pred, area_target)
 
-            total_loss = area_loss_fn * 0.01 + loss
+            total_loss = area_loss_fn + loss
             total_loss.backward()
             self.optimizer.step()
             train_loss += loss.item()
@@ -174,7 +174,7 @@ class Trainer(object):
             area_loss = self.mse_area_loss(final_area_pred, area_target)
             test_loss += loss.item()
             test_area_loss += area_loss.item()
-            total_loss = test_loss + test_area_loss * 0.01
+            total_loss = test_loss + test_area_loss
             tbar.set_description('Total loss: %.3f' % (total_loss / (i + 1)))
             pred = output.data.cpu().numpy()
             target = target.cpu().numpy()
@@ -197,7 +197,7 @@ class Trainer(object):
         print('Validation:')
         print('[Epoch: %d, numImages: %5d]' % (epoch, i * self.args.batch_size + image.data.shape[0]))
         print("Acc:{}, Acc_class:{}, mIoU:{}, fwIoU: {}".format(Acc, Acc_class, mIoU, FWIoU))
-        print("Area Accuracy: ", area_acc)
+        print("Area Accuracy: ", area_acc.item())
         print('Loss: %.3f' % test_loss)
         print('Area Loss: %.3f' % test_area_loss)
 
