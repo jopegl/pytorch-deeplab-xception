@@ -133,8 +133,8 @@ class Trainer(object):
 
         self.writer.add_scalar('train/total_loss_epoch', train_loss, epoch)
         print('[Epoch: %d, numImages: %5d]' % (epoch, i * self.args.batch_size + image.data.shape[0]))
-        print('Loss: %.3f' % train_loss/len(self.train_loader))
-        print("Area Loss: ", area_loss/len(self.train_loader))
+        print('Loss: %.3f' % (train_loss/len(self.train_loader)))
+        print("Area Loss: ", (area_loss/len(self.train_loader)))
 
             # save checkpoint every epoch
         is_best = False
