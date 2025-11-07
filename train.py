@@ -109,9 +109,6 @@ class Trainer(object):
             seg_out = F.interpolate(seg_out, size=target.shape[1:], mode='bilinear', align_corners=True)
             area_out = F.interpolate(area_out, size=area_target.shape[2:], mode='bilinear', align_corners=True)
 
-            print('area out shape: ', area_out.shape)
-            print('seg_out shape: ', seg_out.shape)
-
             leaf_seg_out = F.softmax(seg_out, dim=1)[:, 1:2, :, :]
             final_area_pred = area_out*leaf_seg_out
 
@@ -178,7 +175,7 @@ class Trainer(object):
             test_loss += loss.item()
             test_area_loss += area_loss.item()
             total_loss = test_loss + test_area_loss * 0.01
-            tbar.set_description('Totalloss: %.3f' % (total_loss / (i + 1)))
+            tbar.set_description('Total loss: %.3f' % (total_loss / (i + 1)))
             pred = output.data.cpu().numpy()
             target = target.cpu().numpy()
             pred = np.argmax(pred, axis=1)
