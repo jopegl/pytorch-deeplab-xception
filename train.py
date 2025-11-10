@@ -122,7 +122,7 @@ class Trainer(object):
             area_loss += area_loss_fn.item()
             train_l = train_loss / (i + 1)
             area_l = area_loss / (i + 1)
-            tbar.set_description(f'Train loss: {train_l:.3f}, Area loss: {area_l:.3f}')
+            tbar.set_description(f'Train loss: {train_loss/len(self.train_loader):.3f}, Area loss: {area_loss/len(self.train_loader):.3f}')
 
             self.writer.add_scalar('train/total_loss_iter', total_loss.item(), i + num_img_tr * epoch)
 
