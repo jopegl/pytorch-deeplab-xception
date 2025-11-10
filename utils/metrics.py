@@ -8,6 +8,8 @@ class Evaluator(object):
     def __init__(self, num_class):
         self.num_class = num_class
         self.confusion_matrix = np.zeros((self.num_class,)*2)
+        self.area_abs_error_sum = 0.
+        self.area_pixel_count = 0.
 
     def Pixel_Accuracy(self):
         Acc = np.diag(self.confusion_matrix).sum() / self.confusion_matrix.sum()
@@ -47,20 +49,36 @@ class Evaluator(object):
 
     def reset(self):
         self.confusion_matrix = np.zeros((self.num_class,) * 2)
+        self.area_abs_error_sum = 0.
+        self.area_pixel_count = 0.
 
-    def area_accuracy(self, pred_area, target_area):
-        #Garantir que as tensões tenham a dimensão correta
-        if pred_area.dim() == 3:  
+
+    def add_area_batch(self, pred_area, target_area):
+        # Normaliza dimensões
+        if pred_area.dim() == 3:
             pred_area = pred_area.unsqueeze(1)
         if target_area.dim() == 3:
             target_area = target_area.unsqueeze(1)
-        
-        pred_area = F.interpolate(pred_area, size=target_area.shape[2:], mode='bilinear', align_corners=False) #Garantir que as áreas previstas e alvo tenham o mesmo tamanho espacial
 
-        mask = target_area > 0 
-        metric = torch.abs((pred_area - target_area) * mask).sum()/mask.sum() #media dos erros excluindo as partes que não são folha
+        # Match spatial size
+        pred_area = F.interpolate(pred_area, size=target_area.shape[2:], mode='bilinear', align_corners=False)
 
-        return metric
+        # Máscara: conta só regiões de folha/quadrado
+        mask = target_area > 0
+
+        # Soma erro absoluto só onde há folha
+        abs_error = torch.abs(pred_area - target_area) * mask
+
+        self.area_abs_error_sum += abs_error.sum().item()
+        self.area_pixel_count += mask.sum().item()
+
+    def area_accuracy(self):
+        if self.area_pixel_count == 0:
+            return 0.0
+        area_mae = self.area_abs_error_sum / self.area_pixel_count
+        area_accuracy = 1.0 - area_mae
+        return area_accuracy
+
 
 
 

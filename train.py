@@ -13,7 +13,7 @@ from utils.lr_scheduler import LR_Scheduler
 from utils.saver import Saver
 from utils.summaries import TensorboardSummary
 from utils.metrics import Evaluator
-from area_loss_fn import WeightedMSELoss
+from area_loss_fn import WeightedMSELoss, masked_mse_loss
 
 class Trainer(object):
     def __init__(self, args):
@@ -111,19 +111,18 @@ class Trainer(object):
 
             with torch.no_grad():
                 mask_gt = ((target == 1) | (target == 2)).float().unsqueeze(1)
-            final_area_pred = area_out * mask_gt
 
             loss = self.criterion(seg_out, target)
-            area_loss_fn = self.mse_area_loss(final_area_pred, area_target)
+            area_loss_with_mse = masked_mse_loss(area_out, area_target, mask_gt)
 
             alpha = 1.0 # weight for segmentation loss
             beta = 5.0 # weight for area loss
 
-            total_loss = area_loss_fn * beta + loss * alpha
+            total_loss = area_loss_with_mse * beta + loss * alpha
             total_loss.backward()
             self.optimizer.step()
             train_loss += loss.item()
-            area_loss += area_loss_fn.item()
+            area_loss += area_loss_with_mse.item()
             tbar.set_description(f'Train loss: {train_loss/len(self.train_loader):.3f}, Area loss: {area_loss/len(self.train_loader):.3f}')
 
             self.writer.add_scalar('train/total_loss_iter', total_loss.item(), i + num_img_tr * epoch)
@@ -171,20 +170,24 @@ class Trainer(object):
                 area_out = area_out.to(area_target.device)
                 output = output.to(target.device)
             loss = self.criterion(output, target)
-            seg_prob = F.softmax(output, dim=1)
             with torch.no_grad():
-                mask_pred = seg_prob[:,1:2,:,:] + seg_prob[:,2:3,:,:]
-            final_area_pred = area_out*mask_pred
-            area_loss = self.mse_area_loss(final_area_pred, area_target)
+                area_gt = ((target == 1) | (target == 2)).float().unsqueeze(1)
+            area_loss = masked_mse_loss(area_out, area_target, area_gt)
             test_loss += loss.item()
             test_area_loss += area_loss.item()
+
+            seg_prob = F.softmax(output, dim=1)
+            mask_pred = seg_prob[:,1:2,:,:] + seg_prob[:,2:3,:,:]
+            final_area_pred = mask_pred * area_out
             total_loss = test_loss + test_area_loss
+            
             tbar.set_description('Total loss: %.3f' % (total_loss / (i + 1)))
             pred = output.data.cpu().numpy()
             target = target.cpu().numpy()
             pred = np.argmax(pred, axis=1)
             # Add batch sample into evaluator
             self.evaluator.add_batch(target, pred)
+            self.evaluator.add_area_batch(final_area_pred, area_target)
 
         # Fast test during the training
         Acc = self.evaluator.Pixel_Accuracy()
@@ -192,7 +195,7 @@ class Trainer(object):
         mIoU = self.evaluator.Mean_Intersection_over_Union()
         FWIoU = self.evaluator.Frequency_Weighted_Intersection_over_Union()
         with torch.inference_mode():
-            area_acc = self.evaluator.area_accuracy(final_area_pred, area_target)
+            area_acc = self.evaluator.area_accuracy()
         self.writer.add_scalar('val/total_loss_epoch', test_loss, epoch)
         self.writer.add_scalar('val/mIoU', mIoU, epoch)
         self.writer.add_scalar('val/Acc', Acc, epoch)
