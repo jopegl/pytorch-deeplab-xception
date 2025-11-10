@@ -123,7 +123,7 @@ class Trainer(object):
             self.optimizer.step()
             train_loss += loss.item()
             area_loss += area_loss_with_mse.item()
-            tbar.set_description(f'Train loss: {train_loss/len(self.train_loader):.3f}, Area loss: {area_loss/len(self.train_loader):.3f}')
+            tbar.set_description(f'Train loss: {loss.item():.3f}, Area loss: {area_loss_with_mse.item():.3f}')
 
             self.writer.add_scalar('train/total_loss_iter', total_loss.item(), i + num_img_tr * epoch)
 
