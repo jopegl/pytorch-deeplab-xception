@@ -180,7 +180,7 @@ class Trainer(object):
             mask_pred = seg_prob[:,1:2,:,:] + seg_prob[:,2:3,:,:]
             final_area_pred = mask_pred * area_out
             total_loss = test_loss + test_area_loss
-            
+
             tbar.set_description('Total loss: %.3f' % (total_loss / (i + 1)))
             pred = output.data.cpu().numpy()
             target = target.cpu().numpy()
@@ -204,7 +204,7 @@ class Trainer(object):
         print('Validation:')
         print('[Epoch: %d, numImages: %5d]' % (epoch, i * self.args.batch_size + image.data.shape[0]))
         print("Acc:{}, Acc_class:{}, mIoU:{}, fwIoU: {}".format(Acc, Acc_class, mIoU, FWIoU))
-        print("Area Accuracy: ", area_acc.item())
+        print("Area Accuracy: ", area_acc)
         print('Loss: %.3f' % test_loss)
         print('Area Loss: %.3f' % test_area_loss)
 
