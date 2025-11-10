@@ -109,8 +109,9 @@ class Trainer(object):
             seg_out = F.interpolate(seg_out, size=target.shape[1:], mode='bilinear', align_corners=True)
             area_out = F.interpolate(area_out, size=area_target.shape[2:], mode='bilinear', align_corners=True)
 
-            leaf_seg_out = F.softmax(seg_out, dim=1)[:, 1:2, :, :]
-            final_area_pred = area_out*leaf_seg_out
+            with torch.no_grad():
+                mask_gt = ((target == 1) | (target == 2)).float().unsqueeze(1)
+            final_area_pred = area_out * mask_gt
 
             loss = self.criterion(seg_out, target)
             area_loss_fn = self.mse_area_loss(final_area_pred, area_target)
@@ -120,8 +121,6 @@ class Trainer(object):
             self.optimizer.step()
             train_loss += loss.item()
             area_loss += area_loss_fn.item()
-            train_l = train_loss / (i + 1)
-            area_l = area_loss / (i + 1)
             tbar.set_description(f'Train loss: {train_loss/len(self.train_loader):.3f}, Area loss: {area_loss/len(self.train_loader):.3f}')
 
             self.writer.add_scalar('train/total_loss_iter', total_loss.item(), i + num_img_tr * epoch)
@@ -169,8 +168,10 @@ class Trainer(object):
                 area_out = area_out.to(area_target.device)
                 output = output.to(target.device)
             loss = self.criterion(output, target)
-            leaf_seg_out_val = F.softmax(output, dim=1)[:, 1:2, :, :]
-            final_area_pred = area_out*leaf_seg_out_val
+            seg_prob = F.softmax(output, dim=1)
+            with torch.no_grad():
+                mask_pred = seg_prob[:,1:2,:,:] + seg_prob[:,2:3,:,:]
+            final_area_pred = area_out*mask_pred
             area_loss = self.mse_area_loss(final_area_pred, area_target)
             test_loss += loss.item()
             test_area_loss += area_loss.item()
