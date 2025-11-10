@@ -116,7 +116,10 @@ class Trainer(object):
             loss = self.criterion(seg_out, target)
             area_loss_fn = self.mse_area_loss(final_area_pred, area_target)
 
-            total_loss = area_loss_fn + loss
+            alpha = 1.0 # weight for segmentation loss
+            beta = 5.0 # weight for area loss
+
+            total_loss = area_loss_fn * beta + loss * alpha
             total_loss.backward()
             self.optimizer.step()
             train_loss += loss.item()
