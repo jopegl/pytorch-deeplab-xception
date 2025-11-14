@@ -111,6 +111,8 @@ class Trainer(object):
 
             with torch.no_grad():
                 mask_gt = ((target == 1) | (target == 2)).float().unsqueeze(1)
+                leaf_mask = (target == 1).float().unsqueeze(1)
+                
 
             loss = self.criterion(seg_out, target)
             area_loss_with_mse = masked_mse_loss(area_out, area_target, mask_gt)
