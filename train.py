@@ -96,7 +96,8 @@ class Trainer(object):
         train_loss = 0.0
         area_loss = 0
         self.model.train()
-        tbar = tqdm(self.train_loader)
+        tbar = tqdm(self.train_loader, total=len(self.train_loader), ncols=80)
+
         num_img_tr = len(self.train_loader.dataset)
         print("Num images in train loader: ", num_img_tr)
         for i, sample in enumerate(tbar):
@@ -123,7 +124,11 @@ class Trainer(object):
             self.optimizer.step()
             train_loss += loss.item()
             area_loss += area_loss_with_mse.item()
-            tbar.set_description(f'Train loss: {loss.item():.3f}, Area loss: {area_loss_with_mse.item():.3f}')
+            tbar.set_postfix(
+                seg_loss=float(loss.item()),
+                area_loss=float(area_loss_with_mse.item())
+            )
+
 
             self.writer.add_scalar('train/total_loss_iter', total_loss.item(), i + num_img_tr * epoch)
 
@@ -156,7 +161,7 @@ class Trainer(object):
     def validation(self, epoch):
         self.model.eval()
         self.evaluator.reset()
-        tbar = tqdm(self.val_loader, desc='\r')
+        tbar = tqdm(self.val_loader, total=len(self.val_loader), ncols=80)
         test_loss = 0.0
         test_area_loss = 0.0
         for i, sample in enumerate(tbar):
@@ -179,7 +184,7 @@ class Trainer(object):
             final_area_pred = mask_pred * area_out
             total_loss = test_loss + test_area_loss
 
-            tbar.set_description('Total loss: %.3f' % (total_loss / (i + 1)))
+            tbar.set_postfix(total_loss=float(total_loss / (i + 1)))
             pred = output.data.cpu().numpy()
             target = target.cpu().numpy()
             pred = np.argmax(pred, axis=1)
