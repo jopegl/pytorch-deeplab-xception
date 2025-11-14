@@ -110,7 +110,7 @@ class Trainer(object):
 
             with torch.no_grad():
                 mask_gt = ((target == 1) | (target == 2)).float().unsqueeze(1)
-                leaf_mask = (target == 1).float().unsqueeze(1)
+                leaf_mask = (target == 1).float().unsqueeze(1) #separar mascaras de folha e marcador
                 
 
             loss = self.criterion(seg_out, target)
