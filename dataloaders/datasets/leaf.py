@@ -16,8 +16,12 @@ class LeafSegmentation(Dataset):
         self.image_paths = []
         self.mask_paths = []
         self.area_paths = []
+        try:
+            if 'google.colab' in str(get_ipython()):
+                base_dir = os.path.join('/','content','drive','MyDrive', 'split_dataset')
+        except:
+            base_dir = os.path.join('leaf_dataset')
         
-        base_dir = os.path.join("/content/drive/MyDrive/split_dataset")
         dir_with_splits = os.path.join(base_dir, split)
         for leaf_id in sorted(os.listdir(dir_with_splits)):
             leaf_path = os.path.join(dir_with_splits, leaf_id)
