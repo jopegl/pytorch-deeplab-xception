@@ -13,7 +13,7 @@ from utils.lr_scheduler import LR_Scheduler
 from utils.saver import Saver
 from utils.summaries import TensorboardSummary
 from utils.metrics import Evaluator
-from area_loss_fn import WeightedMSELoss, masked_mse_loss
+from area_loss_fn import masked_mse_loss
 
 class Trainer(object):
     def __init__(self, args):
