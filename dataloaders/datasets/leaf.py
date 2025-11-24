@@ -5,6 +5,10 @@ from torch.utils.data import Dataset
 import torchvision.transforms as transforms
 import numpy as np
 import torch.nn.functional as F
+from dotenv import load_dotenv
+
+load_dotenv()
+leaf_dataset_path = os.getenv('LEAF_DATASET_PATH', 'complete_leaf_dataset')
 
 class LeafSegmentation(Dataset):
     NUM_CLASSES = 3 
@@ -17,7 +21,7 @@ class LeafSegmentation(Dataset):
         self.mask_paths = []
         self.area_paths = []
 
-        base_dir = os.path.join('/','content','drive','MyDrive', 'complete_leaf_dataset')
+        base_dir = os.path.join(leaf_dataset_path)
         
         dir_with_splits = os.path.join(base_dir, split)
         for leaf_id in sorted(os.listdir(dir_with_splits)):

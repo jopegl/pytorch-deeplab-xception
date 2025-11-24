@@ -133,7 +133,7 @@ class Trainer(object):
             self.writer.add_scalar('train/total_loss_iter', total_loss.item(), i + num_img_tr * epoch)
 
             # Show 10 * 3 inference results each epoch
-            if i % (num_img_tr // 10) == 0:
+            if i % (num_img_tr // 50) == 0:
                 global_step = i + num_img_tr * epoch
                 self.summary.visualize_image(self.writer, self.args.dataset, image, target, seg_out, global_step)
 
@@ -223,7 +223,7 @@ class Trainer(object):
             }, is_best)
 
 def main():
-    torch.autograd.set_detect_anomaly(True)
+    torch.autograd.set_detect_anomaly(False)
 
     parser = argparse.ArgumentParser(description="PyTorch DeeplabV3Plus Training")
     parser.add_argument('--backbone', type=str, default='resnet',
