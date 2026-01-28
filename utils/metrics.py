@@ -10,6 +10,8 @@ class Evaluator(object):
         self.confusion_matrix = np.zeros((self.num_class,)*2)
         self.area_abs_error_sum = 0.
         self.area_pixel_count = 0.
+        self.rer_leaf = []
+        self.rer_marker = []
 
     def Pixel_Accuracy(self):
         Acc = np.diag(self.confusion_matrix).sum() / self.confusion_matrix.sum()
@@ -51,6 +53,8 @@ class Evaluator(object):
         self.confusion_matrix = np.zeros((self.num_class,) * 2)
         self.area_abs_error_sum = 0.
         self.area_pixel_count = 0.
+        self.rer_leaf = []
+        self.rer_marker = []
 
 
     def add_area_batch(self, pred_area, target_area):
@@ -72,15 +76,41 @@ class Evaluator(object):
         self.area_abs_error_sum += abs_error.sum().item()
         self.area_pixel_count += mask.sum().item()
 
+    def area_rer_stats(self):
+        return {
+            "leaf_mean": np.mean(self.rer_leaf) if len(self.rer_leaf) else 0.0,
+            "leaf_std":  np.std(self.rer_leaf)  if len(self.rer_leaf) else 0.0,
+            "marker_mean": np.mean(self.rer_marker) if len(self.rer_marker) else 0.0,
+            "marker_std":  np.std(self.rer_marker)  if len(self.rer_marker) else 0.0,
+        }
+
+    
+    def area_rer_batch(self, final_area_pred, area_target, target_mask):
+        B = final_area_pred.shape[0]
+
+        for i in range(B):
+
+            # -------- FOLHA --------
+            leaf_mask = (target_mask[i] == 1)
+            A_est_leaf = final_area_pred[i,0][leaf_mask].sum().item()
+            A_gt_leaf  = area_target[i,0][leaf_mask].sum().item()
+
+            if A_gt_leaf > 0:
+                rer_leaf = abs(A_est_leaf - A_gt_leaf) / A_gt_leaf
+                self.rer_leaf.append(rer_leaf)
+
+            # -------- MARCADOR --------
+            marker_mask = (target_mask[i] == 2)
+            A_est_marker = final_area_pred[i,0][marker_mask].sum().item()
+            A_gt_marker  = area_target[i,0][marker_mask].sum().item()
+
+            if A_gt_marker > 0:
+                rer_marker = abs(A_est_marker - A_gt_marker) / A_gt_marker
+                self.rer_marker.append(rer_marker)
+
     def area_accuracy(self):
         if self.area_pixel_count == 0:
             return 0.0
         area_mae = self.area_abs_error_sum / self.area_pixel_count
         area_accuracy = 1.0 - area_mae
         return area_accuracy
-
-
-
-
-
-

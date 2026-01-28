@@ -135,7 +135,7 @@ class Trainer(object):
             # Show 10 * 3 inference results each epoch
             if i % (num_img_tr // 50) == 0:
                 global_step = i + num_img_tr * epoch
-                self.summary.visualize_image(self.writer, self.args.dataset, image, target, seg_out, global_step)
+                #self.summary.visualize_image(self.writer, self.args.dataset, image, target, seg_out, global_step)
 
         self.writer.add_scalar('train/total_loss_epoch', train_loss, epoch)
         print('[Epoch: %d, numImages: %5d]' % (epoch, i * self.args.batch_size + image.data.shape[0]))
@@ -191,12 +191,21 @@ class Trainer(object):
             # Add batch sample into evaluator
             self.evaluator.add_batch(target, pred)
             self.evaluator.add_area_batch(final_area_pred, area_target)
+            #self.evaluator.area_rer_batch(final_area_pred, area_target, target)
 
         # Fast test during the training
         Acc = self.evaluator.Pixel_Accuracy()
         Acc_class = self.evaluator.Pixel_Accuracy_Class()
         mIoU = self.evaluator.Mean_Intersection_over_Union()
         FWIoU = self.evaluator.Frequency_Weighted_Intersection_over_Union()
+        rer_stats = self.evaluator.area_rer_stats()
+        leaf_mean = rer_stats['leaf_mean']
+        leaf_std = rer_stats['leaf_std']
+        marker_mean = rer_stats['marker_mean']
+        marker_std = rer_stats['marker_std']
+
+        rer_score = leaf_mean + leaf_std + marker_mean + marker_std
+
         with torch.inference_mode():
             area_acc = self.evaluator.area_accuracy()
         self.writer.add_scalar('val/total_loss_epoch', test_loss, epoch)
@@ -204,23 +213,29 @@ class Trainer(object):
         self.writer.add_scalar('val/Acc', Acc, epoch)
         self.writer.add_scalar('val/Acc_class', Acc_class, epoch)
         self.writer.add_scalar('val/fwIoU', FWIoU, epoch)
+        self.writer.add_scalar('val/RER_leaf_mean', leaf_mean, epoch)
+        self.writer.add_scalar('val/RER_leaf_std', leaf_std, epoch)
+        self.writer.add_scalar('val/RER_marker_mean', marker_mean, epoch)
+        self.writer.add_scalar('val/RER_marker_std', marker_std, epoch)
+        self.writer.add_scalar('val/RER_score', rer_score, epoch)
+
         print('Validation:')
         print('[Epoch: %d, numImages: %5d]' % (epoch, i * self.args.batch_size + image.data.shape[0]))
         print("Acc:{}, Acc_class:{}, mIoU:{}, fwIoU: {}".format(Acc, Acc_class, mIoU, FWIoU))
         print("Area Accuracy: ", area_acc)
         print('Loss: %.3f' % test_loss)
         print('Area Loss: %.3f' % test_area_loss)
+        print(rer_stats)
 
-        new_pred = mIoU
-        if new_pred > self.best_pred:
-            is_best = True
+        new_pred = rer_score
+        if self.best_pred == 0.0 or new_pred < self.best_pred:
             self.best_pred = new_pred
             self.saver.save_checkpoint({
                 'epoch': epoch + 1,
                 'state_dict': self.model.module.state_dict(),
                 'optimizer': self.optimizer.state_dict(),
                 'best_pred': self.best_pred,
-            }, is_best)
+            }, is_best=True)
 
 def main():
     torch.autograd.set_detect_anomaly(False)
@@ -350,3 +365,4 @@ def main():
 
 if __name__ == "__main__":
    main()
+

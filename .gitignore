@@ -110,3 +110,10 @@ leaf_data
 leaf-dataset
 split_dataset
 complete_leaf_dataset
+always_saver/
+checkpoints/
+*.pth
+*.pt
+*.tar
+*.pth.tar
+
